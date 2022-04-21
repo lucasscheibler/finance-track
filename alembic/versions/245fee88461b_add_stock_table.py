@@ -1,8 +1,8 @@
-"""user_and_stock_table
+"""add_stocK_table
 
-Revision ID: d870068a1a76
+Revision ID: 245fee88461b
 Revises: 
-Create Date: 2022-03-02 10:20:46.889355
+Create Date: 2022-04-08 08:06:04.158980
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'd870068a1a76'
+revision = '245fee88461b'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -24,9 +24,9 @@ def upgrade():
     sa.Column('price', sa.Float(precision=10), nullable=True),
     sa.Column('name', sa.String(length=500), nullable=True),
     sa.Column('description', sa.String(length=500), nullable=True),
-    sa.Column('last_update_date', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
+    sa.Column('last_update_date', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.PrimaryKeyConstraint('code')
-    ) 
+    )
     # ### end Alembic commands ###
 
 

@@ -1,14 +1,10 @@
-from typing import List
-from datetime import date
-from yfinance import Ticker
-from sqlalchemy import func
-from sqlalchemy.future import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from concurrent.futures import ThreadPoolExecutor
-from time import monotonic
+from datetime import datetime, date
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from yfinance import Ticker
 import yfinance as yf
 
+from app.services.stock_market_service import StockMarketService
 from app.database.model.stock import StockSchema
 from app.database.model.stock import StockModel
 
@@ -16,80 +12,53 @@ from app.database.model.stock import StockModel
 class StockService():
 
     @staticmethod
-    def get_ticker(stock_code: str) -> Ticker:
-        return yf.Ticker(f'{stock_code}.SA')
+    async def get_stock(stock_code: str, db: AsyncSession) -> StockSchema:
+        return await StockModel.get_stock(stock_code, db)
 
     @staticmethod
-    async def get_stock(code: str, db: AsyncSession) -> StockSchema:        
-        stock_record = (await db.execute(
-                            select(StockModel)
-                            .where(func.upper(StockModel.code) == code.upper()))
-                        ).scalars().one_or_none()
-        return stock_record
+    async def get_all_stocks(db: AsyncSession) -> list[StockSchema]:
+        return await StockModel.get_all_stocks(db)
 
     @staticmethod
-    async def get_all_stocks(db: AsyncSession) -> List[StockSchema]:        
-        stocks =  await db.execute(select(StockModel))    
-        return stocks.scalars().all()
-
-    @staticmethod
-    async def save_stock(stock: StockSchema, db: AsyncSession):
-        new_stock = StockModel(code='VALE3', name='test')
-        db.add(new_stock)
-        await db.commit()
-
-    @staticmethod
-    def update_stock_price(stock: StockModel, ticker: Ticker) -> StockModel:
-        data = ticker.history()
-        last_quote = (data.tail(1)['Close'].iloc[0])
-        return StockModel(code=stock.code, price=last_quote)
+    async def update_stock_price(stock: StockModel, ticker: Ticker) -> StockModel:
+        last_quote = StockMarketService.get_latest_stock_price(ticker)
+        return StockModel(code=stock.code, price=last_quote, last_update_date=datetime.now())
 
     @staticmethod
     def get_current_stock_info(stock_code: str, ticker: Ticker) -> StockModel:
         current_price = ticker.info.get('regularMarketPrice')
         stock_name = ticker.info.get('longName')
-        # data = ticker.history()
-        # current_price = (data.tail(1)['Close'].iloc[0])
-        return StockModel(code=stock_code.upper()
+        return StockModel(code=f'{stock_code.upper()}.SA'
                           ,price=current_price
                           ,name=stock_name
                           ,description=stock_name
-                          ,effective_date=date.today())
+                          ,effective_date=date.today()
+                          ,last_update_date=datetime.now())
 
     @staticmethod
     async def get_latest_stock_price(stock_code: str, db: AsyncSession) -> StockSchema:
-        ticker = StockService.get_ticker(stock_code)
-        stock = await StockService.get_stock(stock_code, db)
+        ticker = StockMarketService.get_ticker(stock_code)
+        stock = await StockModel.get_stock(stock_code, db)
         if stock:
-            stock = StockService.update_stock_price(stock, ticker)
+            stock = await StockService.update_stock_price(stock, ticker)
         else:
             stock = StockService.get_current_stock_info(stock_code, ticker)            
             
-        return await StockService.merge_stock_price(stock, db)
-        
+        stock = await StockModel.merge_stock_price(stock, db)
+        await StockModel.db_commit(db)
+        return stock        
+
     @staticmethod
-    async def merge_stock_price(stock: StockModel, db: AsyncSession)-> StockSchema:                
-        stock = await db.merge(stock)
-        await db.commit()
-        return stock
+    async def update_all_stocks_price(db: AsyncSession) -> list[StockSchema]:
+        tickers_list = await StockModel.get_stocks_codes(db)
+        ticker_data = yf.download(tickers_list,period='1h')['Adj Close']
+        updated_stocks = []        
+        for ticker in tickers_list:
+            stock = StockMarketService.set_latest_price(ticker_data, ticker)
+            stock = await StockModel.merge_stock_price(stock, db)
+            updated_stocks.append(stock)        
 
+        await StockModel.db_commit(db)
+        return updated_stocks
 
-
-        # https://pypi.org/project/yfinance/
-
-        # data = ticker.history()
-        # last_quote = (data.tail(1)['Close'].iloc[0])
-
-        # use "period" instead of start/end
-        # valid periods: 1d,5d,1mo,3mo,6mo,1y,2y,5y,10y,ytd,max
-        # (optional, default is '1mo')
-
-        # yf.download(f'{stock_code}.SA',period="1h")
-
-        # data1 = yf.download(f'{stock_code}.SA','2022-02-01','2022-02-02')
-        # print(data1)
-
-        # tickers_list = ['ITSA4.SA', 'VALE3.SA', 'ENBR3.SA', 'TAEE11.SA']
-        # data2 = yf.download(tickers_list,'2022-01-01')['Adj Close']
-        # print(data2)
-        
+    

@@ -11,7 +11,7 @@ def register_routes(app):
     
 
 def create_app():
-    application = FastAPI()
+    application = FastAPI(title="Finance-Track", version="0.0.2")
     db = Database()
     db.upgrade_db()
     db.connect_async_database()
