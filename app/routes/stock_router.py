@@ -9,39 +9,39 @@ stock_router = APIRouter()
 
 
 @stock_router.get("/", response_model=list[StockSchema], tags=["Stock"])
-async def get_all_stocks(db: AsyncSession = Depends(get_session)) -> list[StockSchema]:
+async def get_all_stocks(db_session: AsyncSession = Depends(get_session)) -> list[StockSchema]:
     """ It returns a list of stocks
 
     Args:
-        db (AsyncSession): database session 
+        db_session (AsyncSession): database session 
 
     Returns:
         List[StockSchema]: list of stock schema
     """
-    return await StockService.get_all_stocks(db)
+    return await StockService.get_all_stocks(db_session)
 
 
 @stock_router.post("/refresh",response_model=list[StockSchema], tags=["Stock"])
-async def update_all_stock_prices(db: AsyncSession = Depends(get_session)) -> list[StockSchema]:
+async def update_all_stock_prices(db_session: AsyncSession = Depends(get_session)) -> list[StockSchema]:
     """It updates and returns all stocks information 
 
     Args:
         code (str): stock code
-        db (AsyncSession): databse session
+        db_session (AsyncSession): database session
 
     Returns:
         StockSchema: stock schema
     """
-    return await StockService.update_all_stocks_price(db)
+    return await StockService.update_all_stocks_price(db_session)
 
 
 @stock_router.get("/{code}", response_model=StockSchema, tags=["Stock"])
-async def get_stock(code: str, db: AsyncSession = Depends(get_session)) -> StockSchema:
-    """It returns the stock information for a given stock code
+async def get_stock(code: str, db_session: AsyncSession = Depends(get_session)) -> StockSchema:
+    """It returns the stock information for a given stock code/ticker
 
     Args:
         code (str): stock code
-        db (AsyncSession): database session
+        db_session (AsyncSession): database session
 
     Raises:
         HTTPException: raises this exception if given stock code is not found
@@ -49,24 +49,24 @@ async def get_stock(code: str, db: AsyncSession = Depends(get_session)) -> Stock
     Returns:
         StockSchema: stock schema
     """
-    stock = await StockService.get_stock(code, db)
+    stock = await StockService.get_stock(code, db_session)
     if not stock:
-            raise HTTPException(status_code=404, detail='Stock not found')
+        raise HTTPException(status_code=404, detail='Stock not found')
     return stock
 
 
 @stock_router.get("/{code}/refresh",response_model=StockSchema, tags=["Stock"])
-async def get_updated_stock_price(code: str, db: AsyncSession = Depends(get_session)) -> StockSchema:
+async def get_updated_stock_price(code: str, db_session: AsyncSession = Depends(get_session)) -> StockSchema:
     """It returns the updated stock information for a given stock code
 
     Args:
         code (str): stock code
-        db (AsyncSession): databse session
+        db_session (AsyncSession): database session
 
     Returns:
         StockSchema: stock schema
     """
-    return await StockService.get_latest_stock_price(code, db)
+    return await StockService.get_latest_stock_price(code, db_session)
 
 
 

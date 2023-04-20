@@ -8,6 +8,7 @@ from app.database.database import db
 
 
 class StockSchema(BaseModel):
+    '''Stock schema'''
     code: str
     effective_date: date = None
     price: float = None
@@ -20,6 +21,7 @@ class StockSchema(BaseModel):
 
 
 class StockModel(db.base):
+    '''Stock model'''
     __tablename__ = 'stock'
 
     code = Column(String(length=100), primary_key=True)
@@ -30,33 +32,82 @@ class StockModel(db.base):
     last_update_date = Column(DateTime(), server_default=func.now())
 
     @staticmethod
-    async def get_stock(code: str, db: AsyncSession) -> StockSchema:        
-        stock_record = (await db.execute(
+    async def get_stock(code: str, db_session: AsyncSession) -> StockSchema:
+        """It gets the Stock info for a given Stock code
+
+        Args:
+            code (str): Stock code
+            db (AsyncSession): database async session
+
+        Returns:
+            StockSchema: stock schema
+        """
+        stock_record = (
+                        await db_session.execute(
                             select(StockModel)
                             .where(func.upper(StockModel.code) == f'{code.upper()}.SA'))
                         ).scalars().one_or_none()
         return stock_record
     
     @staticmethod
-    async def get_all_stocks(db: AsyncSession) -> list[StockSchema]:        
-        stocks =  await db.execute(select(StockModel))    
+    async def get_all_stocks(db_session: AsyncSession) -> list[StockSchema]:
+        """It returns all Stocks from database
+
+        Args:
+            db (AsyncSession): database async session
+
+        Returns:
+            list[StockSchema]: _description_
+        """      
+        stocks =  await db_session.execute(select(StockModel))    
         return stocks.scalars().all()
     
     @staticmethod
-    async def get_stocks_codes(db: AsyncSession) -> list[StockSchema]:        
-        stocks =  await db.execute(select(StockModel.code))  
+    async def get_stocks_codes(db_session: AsyncSession) -> list[StockSchema]:
+        """It returns all Stock codes from database
+
+        Args:
+            db (AsyncSession): database async session
+
+        Returns:
+            list[StockSchema]: _description_
+        """
+        stocks =  await db_session.execute(select(StockModel.code))  
         return stocks.scalars().all()
     
     @staticmethod
-    async def save_stock(stock: StockSchema, db: AsyncSession):
+    async def save_stock(stock: StockSchema, db_session: AsyncSession):
+        """It saves a Stock into database
+
+        Args:
+            stock (StockSchema): Stock schema
+            db (AsyncSession): database async session
+        """
         new_stock = StockModel(**stock)
-        db.add(new_stock)
-        await db.commit()
+        db_session.add(new_stock)
+        await db_session.commit()
     
     @staticmethod
-    async def merge_stock_price(stock, db: AsyncSession) -> StockSchema:                
-        return await db.merge(stock)
+    async def merge_stock_price(stock, db_session: AsyncSession) -> StockSchema:
+        """It inserts/updates stock model into database
+
+        Args:
+            stock (model): Stock model
+            db (AsyncSession): database async session
+
+        Returns:
+            StockSchema: Stock schema
+        """
+        return await db_session.merge(stock)
     
     @staticmethod
-    async def db_commit(db: AsyncSession) -> StockSchema:                
-        return await db.commit()
+    async def db_commit(db_session: AsyncSession) -> StockSchema:
+        """It commits the database transaction and returns
+
+        Args:
+            db (AsyncSession): database async session object
+
+        Returns:
+            StockSchema: Stock schema
+        """
+        return await db_session.commit()

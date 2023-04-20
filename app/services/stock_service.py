@@ -2,7 +2,6 @@ from datetime import datetime, date
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from yfinance import Ticker
-import yfinance as yf
 
 from app.services.stock_market_service import StockMarketService
 from app.database.model.stock import StockSchema
@@ -51,7 +50,7 @@ class StockService():
     @staticmethod
     async def update_all_stocks_price(db: AsyncSession) -> list[StockSchema]:
         tickers_list = await StockModel.get_stocks_codes(db)
-        ticker_data = yf.download(tickers_list,period='1h')['Adj Close']
+        ticker_data = StockMarketService.download_tickers(tickers_list)
         updated_stocks = []        
         for ticker in tickers_list:
             stock = StockMarketService.set_latest_price(ticker_data, ticker)
