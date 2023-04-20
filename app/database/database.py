@@ -44,6 +44,8 @@ class Database(metaclass=Singleton):
             Add model's MetaData object here to be detected by alembic
         '''
         from app.database.model.stock import StockModel
+        from app.database.model.wallet import WalletModel
+        from app.database.model.transaction import TransactionModel
 
         return self.base.metadata
 
