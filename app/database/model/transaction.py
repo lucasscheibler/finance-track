@@ -1,9 +1,10 @@
 from datetime import date, datetime
 from typing import Optional
 from pydantic import BaseModel
-from sqlalchemy import Column, Date, DateTime, Float, ForeignKey, Integer, String, func, Sequence
-from app.database.model.wallet import WalletModel
+from sqlalchemy import Column, Date, DateTime, Float, Integer, String, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy import func
 
 from app.database.database import db
 
@@ -27,8 +28,8 @@ class TransactionModel(db.base):
     ''' Transaction model'''
     __tablename__ = 'transaction'
     
-    transaction_id = Column(Integer(), Sequence('transaction_id_seq'), primary_key=True)
-    wallet_id = Column(Integer(), ForeignKey(WalletModel.wallet_id))
+    transaction_id = Column(Integer(), autoincrement=True, primary_key=True)
+    wallet_id = Column(Integer())
     category = Column(String(length=100))
     code = Column(String(length=100))
     action = Column(String(length=100))
@@ -49,3 +50,16 @@ class TransactionModel(db.base):
         """        
         db_session.add(transaction)
         await db_session.commit()
+
+    @staticmethod
+    async def calculate_avg(db_session: AsyncSession):
+        stock_record = (
+                        await db_session.execute(
+                            select(TransactionModel.code, 
+                                   func.sum(TransactionModel.total)/func.sum(TransactionModel.num_shares),
+                                   func.sum(TransactionModel.num_shares).label('num_shares'))
+                            .group_by(TransactionModel.code)
+                        )
+                        )
+        
+        return stock_record.fetchall()

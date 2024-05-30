@@ -7,6 +7,8 @@ from typing import AsyncIterator
 
 
 class Singleton(type):
+    '''Singleton class'''
+
     _instances = {}
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
@@ -15,6 +17,7 @@ class Singleton(type):
 
 
 class Database(metaclass=Singleton):
+    '''Database class'''
 
     def __init__(self):
         self.engine = None
@@ -22,6 +25,9 @@ class Database(metaclass=Singleton):
         self.base = declarative_base()
 
     def connect_async_database(self):
+        '''
+            It creates an async engine to connect to the database
+        '''
         if self.engine is not None:
             self.engine.dispose()
         
@@ -31,6 +37,9 @@ class Database(metaclass=Singleton):
         self.session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.engine, class_=AsyncSession)
 
     def connect_database(self):
+        '''
+            It creates a sync engine to connect to the database
+        '''
         if self.engine is not None:
             self.engine.dispose()
         
@@ -49,7 +58,10 @@ class Database(metaclass=Singleton):
 
         return self.base.metadata
 
-    def upgrade_db(self):        
+    def upgrade_db(self):
+        ''''
+            It upgrades the database running the alembic migrations
+        '''        
         from alembic.config import Config
         from alembic import command
 
@@ -60,6 +72,9 @@ class Database(metaclass=Singleton):
         command.upgrade(alembic_cfg, "head")
 
     async def run_async_upgrade(self):
+        ''''
+            It runs the database upgrade on async mode
+        '''
         async with self.engine.begin() as conn:
             await conn.run_sync(self.upgrade_db)
 
@@ -77,8 +92,7 @@ async def get_database_session():
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:
-    async_session = sessionmaker(
-                                db.engine, 
+    async_session = sessionmaker(db.engine, 
                                 expire_on_commit=False, 
                                 class_=AsyncSession
                     )

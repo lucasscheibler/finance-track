@@ -17,7 +17,7 @@ class StockSchema(BaseModel):
     last_update_date: datetime = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class StockModel(db.base):
