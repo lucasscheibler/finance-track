@@ -25,8 +25,8 @@ class StockService():
 
     @staticmethod
     def get_current_stock_info(stock_code: str, ticker: Ticker) -> StockModel:
-        current_price = ticker.info.get('regularMarketPrice')
-        stock_name = ticker.info.get('longName')
+        current_price = ticker.history_metadata.get('regularMarketPrice')
+        stock_name = ticker.history_metadata.get('symbol')
         return StockModel(code=f'{stock_code.upper()}.SA'
                           ,price=current_price
                           ,name=stock_name

@@ -4,3 +4,4 @@ sqlalchemy
 alembic
 yfinance
 python-multipart
+openpyxl
